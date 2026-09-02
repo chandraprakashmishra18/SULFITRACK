@@ -1,0 +1,10 @@
+{
+  "name": "Remix SulfoTrack - Industrial Exposure Intelligence",
+  "description": "Passive H₂S exposure dosimetry, computer vision colorimetric analysis, and real-time worker safety telemetry.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
