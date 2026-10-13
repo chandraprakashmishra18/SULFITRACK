@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ScreenId } from '../types';
+import { REFINERY_FACILITY, CURRENT_SAFETY_OFFICER } from '../data/mockData';
 
 interface HeaderProps {
   currentScreen: ScreenId;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBack }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsRead, setNotificationsRead] = useState(false);
   const backBtnRef = useRef<HTMLButtonElement>(null);
 
   // Determine if this screen displays a back button or the main SulfoTrack branding
@@ -23,15 +25,15 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
   const getSubScreenTitle = () => {
     switch (currentScreen) {
       case 'analysis':
-        return 'Analysis';
+        return 'SpectroCV Analysis';
       case 'result':
-        return 'Result';
+        return 'Dosimetry Result';
       case 'workers':
-        return 'Profile';
+        return 'Personnel Dossier';
       case 'report':
-        return 'Report';
+        return 'OISD Compliance Report';
       case 'how-it-works':
-        return 'Technical Explanation';
+        return 'Engineering Architecture';
       default:
         return '';
     }
@@ -52,8 +54,15 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
               <span className="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-orange-600 rounded-xs flex items-center justify-center font-bold text-xs text-white">S</div>
-              <span className="font-semibold text-slate-900 text-base tracking-tight">{getSubScreenTitle()}</span>
+              <div className="w-6 h-6 bg-orange-600 rounded-sm flex items-center justify-center font-bold text-xs text-white shadow-xs">
+                S
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-slate-900 text-sm tracking-tight">{getSubScreenTitle()}</span>
+                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                  {REFINERY_FACILITY.name} · {REFINERY_FACILITY.division}
+                </span>
+              </div>
             </div>
           </div>
         ) : (
@@ -61,83 +70,144 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => onNavigate('landing')}
           >
-            <div className="w-8 h-8 bg-orange-600 rounded-sm flex items-center justify-center font-bold text-lg text-white shadow-sm shadow-orange-600/20">
+            <div className="w-9 h-9 bg-orange-600 rounded-md flex items-center justify-center font-bold text-lg text-white shadow-sm shadow-orange-600/20">
               S
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-bold tracking-tight text-slate-900 uppercase">SulfoTrack</span>
-              <span className="text-[10px] text-slate-500 font-medium tracking-wider uppercase">
-                Facility: Refinery Alpha-7
+              <div className="flex items-center gap-1.5">
+                <span className="text-base font-bold tracking-tight text-slate-900 uppercase">SulfoTrack</span>
+                <span className="hidden xs:inline-block px-1.5 py-0.2 bg-orange-100 text-orange-800 text-[10px] font-mono font-bold rounded">
+                  SIH-MRPL
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 font-medium tracking-wide">
+                {REFINERY_FACILITY.name} · Mangaluru
               </span>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-3">
-          {/* Facility & Shift badge on medium screens */}
-          <div className="hidden sm:flex items-center gap-2 text-slate-500 text-xs px-2.5 py-1 bg-slate-100 rounded-md border border-slate-200">
-            <span className="font-medium text-slate-700">Refinery Alpha-7</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Shift badge */}
+          <div className="hidden sm:flex items-center gap-2 text-slate-600 text-xs px-2.5 py-1 bg-slate-100 rounded-md border border-slate-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="font-semibold text-slate-800">Shift B (Evening)</span>
             <span className="w-1 h-1 bg-slate-400 rounded-full"></span>
-            <span>Shift B (Night)</span>
+            <span className="text-slate-500 font-mono text-[11px]">14:00 - 22:00 IST</span>
           </div>
 
-          <span className="px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700 font-mono text-xs font-semibold">
-            DEMO
+          {/* OISD Status Pill */}
+          <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-[11px] font-bold hidden md:inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+            OISD-114
           </span>
 
+          {/* Notifications Button */}
           <button
             id="notifications-btn"
             className="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 relative transition-colors cursor-pointer border border-slate-200"
-            onClick={() => setShowNotifications(!showNotifications)}
-            title="Notifications"
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setNotificationsRead(true);
+            }}
+            title="Refinery Safety Notifications"
           >
             <span className="material-symbols-outlined text-[20px]">notifications</span>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-600 ring-2 ring-white"></span>
+            {!notificationsRead && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-600 ring-2 ring-white"></span>
+            )}
           </button>
 
-          {/* User Profile Info from Theme */}
+          {/* Safety Officer Profile */}
           <div
             id="profile-btn"
-            className="flex items-center gap-2.5 cursor-pointer pl-1 py-1 rounded-lg hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 cursor-pointer pl-1 py-1 rounded-lg hover:bg-slate-50 transition-colors"
             onClick={() => onNavigate('workers')}
-            title="Worker Profile: Marcus Vane"
+            title={`Safety Officer: ${CURRENT_SAFETY_OFFICER.name} (${CURRENT_SAFETY_OFFICER.role})`}
           >
             <div className="text-right hidden md:block">
-              <div className="text-xs font-semibold text-slate-800 leading-tight">Marcus Vane</div>
-              <div className="text-[10px] text-slate-500">Safety Officer</div>
+              <div className="text-xs font-semibold text-slate-800 leading-tight">
+                {CURRENT_SAFETY_OFFICER.name}
+              </div>
+              <div className="text-[10px] text-slate-500 font-medium">
+                Chief HSE Officer
+              </div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center font-bold text-xs text-slate-700 shadow-xs">
-              MV
+            <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center font-bold text-xs text-orange-900 shadow-xs">
+              {CURRENT_SAFETY_OFFICER.initials}
             </div>
           </div>
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-4 top-14 w-80 bg-white text-slate-900 rounded-xl shadow-xl p-3.5 border border-slate-200 z-50 animate-fadeIn">
+            <div className="absolute right-4 top-14 w-84 sm:w-96 bg-white text-slate-900 rounded-xl shadow-xl p-4 border border-slate-200 z-50 animate-fadeIn">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Telemetry Alerts</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-orange-600 text-[18px]">emergency_home</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    MRPL Plant Safety Alerts
+                  </span>
+                </div>
                 <button
-                  className="text-xs text-orange-600 font-medium hover:underline"
+                  className="text-xs text-orange-600 font-semibold hover:underline"
                   onClick={() => setShowNotifications(false)}
                 >
-                  Dismiss
+                  Close
                 </button>
               </div>
-              <div className="mt-2.5 space-y-2 text-xs">
+
+              <div className="mt-3 space-y-2.5 text-xs max-h-80 overflow-y-auto">
+                <div className="p-2.5 bg-amber-50/70 rounded-lg border border-amber-200">
+                  <div className="flex items-center justify-between text-amber-900 font-semibold">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[15px] text-amber-600">warning</span>
+                      Approaching Shift Limit
+                    </span>
+                    <span className="text-[10px] text-amber-700 font-mono">04m ago</span>
+                  </div>
+                  <p className="text-slate-700 mt-1 leading-relaxed">
+                    Worker <strong>Rajesh Kumar (WRK-1048)</strong> logged <strong>10.2 PPM·h</strong> at HCU-2. Shift rotation recommended.
+                  </p>
+                </div>
+
+                <div className="p-2.5 bg-red-50/70 rounded-lg border border-red-200">
+                  <div className="flex items-center justify-between text-red-900 font-semibold">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[15px] text-red-600">crisis_alert</span>
+                      Confined Space Critical Peak
+                    </span>
+                    <span className="text-[10px] text-red-700 font-mono">Shift C Record</span>
+                  </div>
+                  <p className="text-slate-700 mt-1 leading-relaxed">
+                    Tank Farm 3B Sludge Pit: <strong>Deepak Sharma (WRK-1077)</strong> logged <strong>14.8 PPM·h</strong>. SCBA ventilation activated.
+                  </p>
+                </div>
+
                 <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                   <div className="flex items-center justify-between text-slate-900 font-semibold">
-                    <span>Badge Calibration</span>
-                    <span className="text-[10px] text-slate-400">02m ago</span>
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
+                      Batch Calibration Sync
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">1h ago</span>
                   </div>
-                  <p className="text-slate-600 mt-0.5">Model ST-X7 #8492 synchronized with Alpha-7 base station.</p>
+                  <p className="text-slate-600 mt-1 leading-relaxed">
+                    Central Analytical Lab (Pooja Deshmukh) verified calibration swatches for Batch #2026-SRU-09.
+                  </p>
                 </div>
-                <div className="p-2.5 bg-orange-50/60 rounded-lg border border-orange-200">
-                  <div className="flex items-center justify-between text-orange-800 font-semibold">
-                    <span>Sector 4-G Attention</span>
-                    <span className="text-[10px] text-orange-600">15m ago</span>
-                  </div>
-                  <p className="text-slate-700 mt-0.5">Atmospheric H₂S delta approaching threshold limits.</p>
-                </div>
+              </div>
+
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Emergency Control Room: <strong>Ext. 2222</strong></span>
+                <button
+                  onClick={() => {
+                    setShowNotifications(false);
+                    onNavigate('dashboard');
+                  }}
+                  className="text-orange-600 font-bold hover:underline"
+                >
+                  View Feed →
+                </button>
               </div>
             </div>
           )}

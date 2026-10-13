@@ -9,10 +9,13 @@ export type ScreenId =
   | 'how-it-works'
   | 'history';
 
+
 export interface ExposureRecord {
   id: string;
   workerName: string;
+  workerId?: string;
   badgeId: string;
+  department?: string;
   shift: string;
   exposure: string;
   exposureValue: number;
@@ -27,11 +30,18 @@ export interface ExposureRecord {
   rgb: string;
   deltaE: string;
   date: string;
+  supervisor?: string;
 }
 
 export interface WorkerTelemetry {
   workerId: string;
   workerName: string;
+  role: string;
+  department: string;
+  gatePassNo: string;
+  bloodGroup: string;
+  emergencyContact: string;
+  medicalFitness: string;
   badgeId: string;
   shift: string;
   estimatedDose: string;
@@ -39,4 +49,9 @@ export interface WorkerTelemetry {
   humidity: string;
   status: 'Normal' | 'Elevated' | 'Invalid';
   lastScan: string;
+  shiftAvgDose?: number;
+  weeklyDose?: number;
+  monthlyDose?: number;
+  complianceRate?: string;
 }
+
