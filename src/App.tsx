@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScreenId, ExposureRecord } from './types';
-import { INITIAL_EXPOSURE_RECORDS } from './data/mockData';
+import { INITIAL_EXPOSURE_RECORDS, CURRENT_SAFETY_OFFICER } from './data/mockData';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { LandingScreen } from './screens/LandingScreen';
@@ -17,6 +17,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('landing');
   const [historyStack, setHistoryStack] = useState<ScreenId[]>(['landing']);
   const [records, setRecords] = useState<ExposureRecord[]>(INITIAL_EXPOSURE_RECORDS);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('WRK-1048');
 
   // Sync with browser history / hash if user or test automation triggers history.back()
   useEffect(() => {
@@ -67,22 +68,25 @@ export default function App() {
   const handleSaveExposureRecord = () => {
     const newRecord: ExposureRecord = {
       id: `REC-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: 'Oct 24, Just now',
-      timestamp: 'Oct 24, 2023 - Just now',
+      date: '13 Oct, Just now',
+      timestamp: '13 Oct 2026 - Just now IST',
       workerName: 'Rajesh Kumar',
+      workerId: 'WRK-1048',
+      department: 'Hydrocracker Unit (HCU-2)',
       badgeId: 'ST-WB-00124',
-      shift: 'Evening Shift (B)',
-      exposure: '10.2 PPM',
+      shift: 'Evening (Shift B: 14:00 - 22:00)',
+      exposure: '10.2 PPM·h',
       exposureValue: 10.2,
-      environment: '31.0°C | 64%',
+      environment: '31.0°C / 64% RH',
       temp: '31.0°C',
       humidity: '64%',
-      confidence: '92.0%',
+      confidence: '94.8%',
       status: 'Warning',
       colorHex: '#d97706',
       textColorHex: '#ffffff',
       rgb: 'R: 217 G: 119 B: 6',
-      deltaE: '2.84'
+      deltaE: '2.84',
+      supervisor: CURRENT_SAFETY_OFFICER.name
     };
 
     setRecords((prev) => [newRecord, ...prev]);
@@ -112,11 +116,25 @@ export default function App() {
           />
         )}
         {currentScreen === 'workers' && (
-          <WorkerProfileScreen onNavigate={navigateTo} onBack={handleBack} />
+          <WorkerProfileScreen
+            onNavigate={navigateTo}
+            onBack={handleBack}
+            workerId={selectedWorkerId}
+            onSelectWorker={setSelectedWorkerId}
+          />
         )}
-        {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} />}
+        {currentScreen === 'dashboard' && (
+          <DashboardScreen
+            onNavigate={navigateTo}
+            onSelectWorker={setSelectedWorkerId}
+          />
+        )}
         {currentScreen === 'report' && (
-          <ReportScreen onNavigate={navigateTo} onBack={handleBack} />
+          <ReportScreen
+            onNavigate={navigateTo}
+            onBack={handleBack}
+            workerId={selectedWorkerId}
+          />
         )}
         {currentScreen === 'how-it-works' && (
           <HowItWorksScreen onNavigate={navigateTo} onBack={handleBack} />

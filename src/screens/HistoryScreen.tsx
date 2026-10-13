@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ScreenId, ExposureRecord } from '../types';
-import { INITIAL_EXPOSURE_RECORDS } from '../data/mockData';
+import { INITIAL_EXPOSURE_RECORDS, REFINERY_FACILITY, CURRENT_SAFETY_OFFICER } from '../data/mockData';
 
 interface HistoryScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -20,7 +20,44 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Record ID', 'Worker Name', 'Badge ID', 'Department', 'Shift', 'Estimated Exposure', 'Temperature', 'Humidity', 'Confidence', 'Status', 'Timestamp'];
+    const rows = filteredRecords.map((r) => [
+      r.id,
+      `"${r.workerName}"`,
+      r.badgeId,
+      `"${r.department || 'Refinery Unit'}"`,
+      `"${r.shift}"`,
+      `"${r.exposure}"`,
+      r.temp,
+      r.humidity,
+      r.confidence,
+      r.status,
+      `"${r.timestamp}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `MRPL_Historical_Exposure_Archive_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('Historical exposure records successfully exported to CSV format.');
+  };
+
+  const handleExportPDF = () => {
+    showToast('Generating certified statutory PDF package for Directorate audit...');
+    setTimeout(() => {
+      window.print();
+    }, 600);
   };
 
   const filteredRecords = records.filter((rec) => {
@@ -29,16 +66,17 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       !q ||
       rec.workerName.toLowerCase().includes(q) ||
       rec.badgeId.toLowerCase().includes(q) ||
-      rec.id.toLowerCase().includes(q);
+      rec.id.toLowerCase().includes(q) ||
+      (rec.department && rec.department.toLowerCase().includes(q));
 
     const matchesWorker = !workerFilter || rec.workerName === workerFilter;
     const matchesStatus = !statusFilter || rec.status === statusFilter;
 
     let matchesDate = true;
     if (dateFilter === 'today') {
-      matchesDate = rec.date.includes('Oct 24');
+      matchesDate = rec.date.includes('13 Oct');
     } else if (dateFilter === 'yesterday') {
-      matchesDate = rec.date.includes('Oct 23');
+      matchesDate = rec.date.includes('12 Oct');
     }
 
     return matchesSearch && matchesWorker && matchesStatus && matchesDate;
@@ -53,21 +91,28 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
 
   return (
     <div className="flex flex-col w-full pb-16 animate-fadeIn">
-      {/* Demonstration Data Disclaimer */}
-      <div className="mb-4 p-3 bg-orange-50 text-orange-900 rounded-xl flex items-center justify-between shadow-sm border border-orange-200">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-orange-600">info</span>
-          <span className="font-mono text-orange-900 font-medium text-xs">
-            Simulation Mode: Displaying historical telemetry records for Sector 4-G.
-          </span>
+      {/* Enterprise Status Banner */}
+      <div className="mb-4 p-4 bg-white text-slate-800 rounded-2xl flex items-center justify-between shadow-xs border border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100">
+            <span className="material-symbols-outlined text-[18px]">verified</span>
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-900">
+              {REFINERY_FACILITY.name} • EHS Exposure Registry
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono">
+              Statutory Archive for OISD-114 & DGMS Periodic Inspection Records
+            </div>
+          </div>
         </div>
-        <span className="font-mono uppercase px-2 py-0.5 rounded bg-orange-600 text-white text-[10px] font-bold">
-          Active
+        <span className="font-mono uppercase px-2.5 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold hidden sm:inline-block">
+          AUDIT READY
         </span>
       </div>
 
       {toastMessage && (
-        <div className="mb-4 p-3 bg-emerald-50 text-emerald-800 rounded-xl flex items-center gap-2 border border-emerald-200 animate-fadeIn text-xs font-medium">
+        <div className="mb-4 p-3.5 bg-emerald-50 text-emerald-900 rounded-xl flex items-center gap-2 border border-emerald-200 animate-fadeIn text-xs font-medium">
           <span className="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
           <span>{toastMessage}</span>
         </div>
@@ -76,17 +121,17 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       {/* Page Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Exposure Archive</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Historical Exposure Archive</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Query chemical colorimetric badge readings, atmospheric telemetry, and audit logs.
+            Query past dosimeter readings, atmospheric telemetry, and plant supervisor audit logs.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             id="archive-export-csv-btn"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-            onClick={() => showToast('Historical records exported to CSV format.')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            onClick={handleExportCSV}
           >
             <span className="material-symbols-outlined text-[16px]">download</span>
             <span>Export CSV</span>
@@ -94,17 +139,17 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
 
           <button
             id="archive-export-pdf-btn"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm shadow-orange-950/20"
-            onClick={() => showToast('Generating certified PDF audit package...')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm shadow-orange-950/20"
+            onClick={handleExportPDF}
           >
             <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-            <span>Export PDF</span>
+            <span>Export PDF Dossier</span>
           </button>
         </div>
       </div>
 
       {/* Search and Filters Panel */}
-      <div className="bg-white p-4 rounded-xl mb-4 flex flex-col gap-3 shadow-sm border border-slate-200">
+      <div className="bg-white p-4 rounded-2xl mb-4 flex flex-col gap-3 shadow-sm border border-slate-200">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {/* Search Bar */}
           <div className="relative">
@@ -114,7 +159,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
             <input
               id="searchInput"
               className="w-full pl-9 pr-3 py-2 bg-slate-50 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-600 border border-slate-200 text-xs"
-              placeholder="Search worker, badge ID..."
+              placeholder="Search worker, badge, or record ID..."
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -130,13 +175,13 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
               onChange={(e) => setDateFilter(e.target.value)}
             >
               <option value="">All Dates (Last 30 Days)</option>
-              <option value="today">Today (Oct 24)</option>
-              <option value="yesterday">Yesterday (Oct 23)</option>
+              <option value="today">Today (13 Oct 2026)</option>
+              <option value="yesterday">Yesterday (12 Oct 2026)</option>
               <option value="week">Past 7 Days</option>
             </select>
           </div>
 
-          {/* Worker Filter */}
+          {/* Worker Filter with Indian Names */}
           <div className="relative">
             <select
               id="workerFilter"
@@ -144,12 +189,15 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
               value={workerFilter}
               onChange={(e) => setWorkerFilter(e.target.value)}
             >
-              <option value="">All Workers</option>
-              <option value="Marcus Vance">Marcus Vance</option>
-              <option value="Elena Rostova">Elena Rostova</option>
-              <option value="Derrick Cole">Derrick Cole</option>
-              <option value="Sarah Chen">Sarah Chen</option>
-              <option value="Javier Gomez">Javier Gomez</option>
+              <option value="">All Refinery Personnel</option>
+              <option value="Rajesh Kumar">Rajesh Kumar (HCU-2)</option>
+              <option value="Arjun Patel">Arjun Patel (SRU-3)</option>
+              <option value="Deepak Sharma">Deepak Sharma (Tank 3B)</option>
+              <option value="Sunil Verma">Sunil Verma (ARU-04)</option>
+              <option value="Suresh G. Patil">Suresh G. Patil (Flare Stack)</option>
+              <option value="Kavita Sundaram">Kavita Sundaram (Sampling)</option>
+              <option value="Rameshwar Yadav">Rameshwar Yadav (DCU)</option>
+              <option value="Manish Tiwari">Manish Tiwari (CDU-1)</option>
             </select>
           </div>
 
@@ -162,9 +210,9 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="">All Statuses</option>
-              <option value="Safe">Safe</option>
-              <option value="Warning">Warning</option>
-              <option value="Critical">Critical</option>
+              <option value="Safe">Safe (&lt;5 PPM·h)</option>
+              <option value="Warning">Warning (5-10 PPM·h)</option>
+              <option value="Critical">Critical (&gt;10 PPM·h)</option>
             </select>
           </div>
         </div>
@@ -183,20 +231,21 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       </div>
 
       {/* Records Table Container */}
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200">
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[760px]">
             <thead>
               <tr className="bg-slate-50 text-slate-600 font-mono uppercase tracking-wider text-[11px] font-bold border-b border-slate-200">
-                <th className="p-3">Date / Time</th>
-                <th className="p-3">Worker</th>
-                <th className="p-3">Badge ID</th>
-                <th className="p-3">Shift</th>
-                <th className="p-3">Est. Exposure</th>
-                <th className="p-3">Environment</th>
-                <th className="p-3">Confidence</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Action</th>
+                <th className="p-3.5">Date / Time</th>
+                <th className="p-3.5">Worker Name</th>
+                <th className="p-3.5">Department / Unit</th>
+                <th className="p-3.5">Badge ID</th>
+                <th className="p-3.5">Shift</th>
+                <th className="p-3.5">Est. Dose</th>
+                <th className="p-3.5">Climate</th>
+                <th className="p-3.5">Confidence</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Inspect</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100" id="recordsTableBody">
@@ -218,26 +267,29 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer"
                     onClick={() => setSelectedRecord(rec)}
                   >
-                    <td className="p-3 font-mono text-slate-800 text-xs">{rec.date}</td>
-                    <td className="p-3 font-semibold text-slate-900 text-xs">
+                    <td className="p-3.5 font-mono text-slate-800 text-xs">{rec.date}</td>
+                    <td className="p-3.5 font-bold text-slate-900 text-xs">
                       {rec.workerName}
                     </td>
-                    <td className="p-3 text-slate-500 text-xs font-mono">
+                    <td className="p-3.5 text-slate-600 text-xs font-medium">
+                      {rec.department || 'Refinery Block'}
+                    </td>
+                    <td className="p-3.5 text-slate-500 text-xs font-mono">
                       {rec.badgeId}
                     </td>
-                    <td className="p-3 text-slate-500 text-xs">
+                    <td className="p-3.5 text-slate-500 text-xs">
                       {rec.shift.split(' ')[0]}
                     </td>
-                    <td className="p-3 font-bold text-slate-900 text-xs font-mono">
+                    <td className="p-3.5 font-bold text-slate-900 text-xs font-mono">
                       {rec.exposure}
                     </td>
-                    <td className="p-3 text-slate-500 text-xs font-mono">
+                    <td className="p-3.5 text-slate-500 text-xs font-mono">
                       {rec.temp} | {rec.humidity}
                     </td>
-                    <td className="p-3 text-orange-700 text-xs font-mono font-semibold">
+                    <td className="p-3.5 text-orange-700 text-xs font-mono font-semibold">
                       {rec.confidence}
                     </td>
-                    <td className="p-3">
+                    <td className="p-3.5">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded font-mono text-[10px] font-bold ${badgeClass}`}
                       >
@@ -245,7 +297,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                         {rec.status}
                       </span>
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3.5 text-right">
                       <button
                         className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 ml-auto transition-colors cursor-pointer border border-slate-200"
                         title="View details"
@@ -269,7 +321,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       {selectedRecord && (
         <div
           id="recordModal"
-          className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
         >
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
             {/* Modal Header */}
@@ -278,10 +330,10 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                 <span className="material-symbols-outlined text-orange-400">analytics</span>
                 <div>
                   <h3 className="text-sm text-white font-bold font-mono" id="modalRecordId">
-                    Record #{selectedRecord.id}
+                    Dossier #{selectedRecord.id}
                   </h3>
                   <p className="font-mono text-slate-400 text-xs" id="modalTimestamp">
-                    {selectedRecord.timestamp}
+                    {selectedRecord.timestamp} • {REFINERY_FACILITY.name}
                   </p>
                 </div>
               </div>
@@ -296,9 +348,9 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
             {/* Modal Body */}
             <div className="p-5 overflow-y-auto flex flex-col gap-4">
               {/* Worker & Badge Info */}
-              <div className="bg-slate-50 p-3.5 rounded-xl flex items-center justify-between border border-slate-200">
+              <div className="bg-slate-50 p-4 rounded-xl flex items-center justify-between border border-slate-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center font-bold shadow-sm">
                     <span className="material-symbols-outlined text-[20px]" id="modalWorkerInitials">
                       person
                     </span>
@@ -307,8 +359,8 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                     <h4 className="font-bold text-slate-900 text-sm" id="modalWorkerName">
                       {selectedRecord.workerName}
                     </h4>
-                    <p className="text-slate-500 text-xs font-mono" id="modalBadgeId">
-                      Badge: {selectedRecord.badgeId}
+                    <p className="text-slate-500 text-xs" id="modalBadgeId">
+                      {selectedRecord.department} • Badge: {selectedRecord.badgeId}
                     </p>
                   </div>
                 </div>
@@ -335,7 +387,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                   <span className="font-mono text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                    Estimated Exposure
+                    Cumulative Exposure
                   </span>
                   <div
                     className="font-bold text-slate-900 mt-1 text-2xl font-mono"
@@ -345,7 +397,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                   </div>
                   <p className="text-emerald-700 mt-1 text-xs font-semibold">
                     {selectedRecord.exposureValue < 5
-                      ? 'Well below 10 PPM limit'
+                      ? 'Well below 10 PPM·h ceiling'
                       : selectedRecord.exposureValue < 10
                       ? 'Approaching exposure threshold'
                       : 'Exceeds standard ceiling limit'}
@@ -354,7 +406,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
 
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                   <span className="font-mono text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                    Model Confidence
+                    SpectroCV Confidence
                   </span>
                   <div
                     className="font-bold text-orange-600 mt-1 text-2xl font-mono"
@@ -362,14 +414,14 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                   >
                     {selectedRecord.confidence}
                   </div>
-                  <p className="text-slate-500 mt-1 text-xs font-medium">RGB variance verified</p>
+                  <p className="text-slate-500 mt-1 text-xs font-medium">Laplacian & Delta-E verified</p>
                 </div>
               </div>
 
               {/* Environmental Conditions */}
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                 <span className="font-mono text-[10px] text-slate-500 uppercase block mb-2 font-bold tracking-wider">
-                  Environmental Telemetry
+                  Plant Micro-Climate Telemetry
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-2">
@@ -399,10 +451,10 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-mono text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                    Colorimetric Patch Analysis
+                    Colorimetric Strip Darkening
                   </span>
                   <span className="font-mono text-orange-600 text-xs font-bold">
-                    RGB Sensor Array v4
+                    Delta-E: {selectedRecord.deltaE}
                   </span>
                 </div>
 
@@ -416,33 +468,33 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
                     id="modalColorText"
                     style={{ color: selectedRecord.textColorHex }}
                   >
-                    Color Shift Index: {selectedRecord.status}
+                    Color Shift: {selectedRecord.status}
                   </span>
                 </div>
 
                 <div className="flex justify-between text-slate-500 mt-2 font-mono text-xs">
                   <span>{selectedRecord.rgb}</span>
-                  <span>Delta-E: {selectedRecord.deltaE}</span>
+                  <span>Supervisor: {CURRENT_SAFETY_OFFICER.name}</span>
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-3.5 bg-slate-50 flex justify-end gap-2 border-t border-slate-200">
+            <div className="p-4 bg-slate-50 flex justify-end gap-2 border-t border-slate-200">
               <button
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer border border-slate-200"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-slate-200"
                 onClick={() => setSelectedRecord(null)}
               >
                 Close
               </button>
               <button
-                className="px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm shadow-orange-950/20"
+                className="px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm shadow-orange-950/20"
                 onClick={() => {
-                  showToast(`Certified compliance certificate for #${selectedRecord.id} generated.`);
+                  showToast(`Official compliance slip for #${selectedRecord.id} generated.`);
                   setSelectedRecord(null);
                 }}
               >
-                Download Certificate
+                Generate Compliance Receipt
               </button>
             </div>
           </div>
