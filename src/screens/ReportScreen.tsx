@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { ScreenId } from '../types';
+import { ScreenId, WorkerTelemetry } from '../types';
 import { REFINERY_FACILITY, CURRENT_SAFETY_OFFICER, WORKER_TELEMETRY_LIST } from '../data/mockData';
 
 interface ReportScreenProps {
   onNavigate: (screen: ScreenId) => void;
   onBack: () => void;
   workerId?: string;
+  workers?: WorkerTelemetry[];
 }
 
-export const ReportScreen: React.FC<ReportScreenProps> = ({ onNavigate, onBack, workerId = 'WRK-1048' }) => {
+export const ReportScreen: React.FC<ReportScreenProps> = ({
+  onNavigate,
+  onBack,
+  workerId = 'WRK-1048',
+  workers = WORKER_TELEMETRY_LIST
+}) => {
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   const worker =
-    WORKER_TELEMETRY_LIST.find((w) => w.workerId === workerId) ||
-    WORKER_TELEMETRY_LIST[0];
+    workers.find((w) => w.workerId === workerId) ||
+    workers[0];
 
   const handleDownloadPDF = () => {
     setDownloadNotice('Preparing official OISD-114 / DGMS compliance dossier for printing...');

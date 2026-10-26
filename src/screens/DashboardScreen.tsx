@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
-import { ScreenId } from '../types';
+import { WorkerTelemetry, ScreenId } from '../types';
 import { WORKER_TELEMETRY_LIST, REFINERY_FACILITY } from '../data/mockData';
 
 interface DashboardScreenProps {
   onNavigate: (screen: ScreenId) => void;
   onSelectWorker?: (workerId: string) => void;
+  workers?: WorkerTelemetry[];
 }
 
-export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, onSelectWorker }) => {
+export const DashboardScreen: React.FC<DashboardScreenProps> = ({
+  onNavigate,
+  onSelectWorker,
+  workers = WORKER_TELEMETRY_LIST
+}) => {
   const [searchWorker, setSearchWorker] = useState('');
   const [shiftFilter, setShiftFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
@@ -18,7 +22,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
   const handleExportCSV = () => {
     // Generate real CSV download
     const headers = ['Worker ID', 'Name', 'Role', 'Department', 'Gate Pass', 'Badge ID', 'Shift', 'Estimated Dose', 'Temp', 'Humidity', 'Status', 'Last Scan'];
-    const rows = WORKER_TELEMETRY_LIST.map((w) => [
+    const rows = workers.map((w) => [
       w.workerId,
       `"${w.workerName}"`,
       `"${w.role}"`,
@@ -48,7 +52,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
     setTimeout(() => setExportNotice(false), 4000);
   };
 
-  const filteredWorkers = WORKER_TELEMETRY_LIST.filter((w) => {
+  const filteredWorkers = workers.filter((w) => {
     const q = searchWorker.toLowerCase();
     const matchesSearch =
       w.workerName.toLowerCase().includes(q) ||

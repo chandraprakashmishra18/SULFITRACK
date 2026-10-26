@@ -1,19 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ScreenId } from '../types';
 import { REFINERY_FACILITY, CURRENT_SAFETY_OFFICER } from '../data/mockData';
+import { api } from '../services/api';
 
 interface HeaderProps {
   currentScreen: ScreenId;
   onNavigate: (screen: ScreenId) => void;
   onBack: () => void;
+  onResetDemo?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBack }) => {
+export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBack, onResetDemo }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationsRead, setNotificationsRead] = useState(false);
+  const [dbConnected, setDbConnected] = useState(true);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const backBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Determine if this screen displays a back button or the main SulfoTrack branding
   const isSubScreen = ['analysis', 'result', 'workers', 'report', 'how-it-works'].includes(currentScreen);
 
   useEffect(() => {
@@ -21,6 +24,25 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
       backBtnRef.current.setAttribute('onclick', 'history.back()');
     }
   }, [isSubScreen, currentScreen]);
+
+  useEffect(() => {
+    api.checkHealth().then((ok) => setDbConnected(ok));
+    const interval = setInterval(() => {
+      api.checkHealth().then((ok) => setDbConnected(ok));
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleTriggerReset = async () => {
+    if (window.confirm('Reset all dosimetry data back to the clean demonstration baseline?')) {
+      await api.resetDemo();
+      setResetSuccess(true);
+      if (onResetDemo) {
+        onResetDemo();
+      }
+      setTimeout(() => setResetSuccess(false), 3000);
+    }
+  };
 
   const getSubScreenTitle = () => {
     switch (currentScreen) {
@@ -75,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold tracking-tight text-slate-900 uppercase">SulfoTrack</span>
+                <span className="text-base font-bold tracking-tight text-slate-900 uppercase">SulfiTrack</span>
                 <span className="hidden xs:inline-block px-1.5 py-0.2 bg-orange-100 text-orange-800 text-[10px] font-mono font-bold rounded">
                   SIH-MRPL
                 </span>
@@ -88,12 +110,40 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
         )}
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Central DB Status Pill */}
+          <div
+            className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold border ${
+              dbConnected
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-amber-50 text-amber-800 border-amber-200'
+            }`}
+            title="SulfiTrack Safety Database Status"
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            ></span>
+            <span>{dbConnected ? 'Central DB: Online' : 'Local Offline Mode'}</span>
+          </div>
+
+          {/* Quick Demo Reset Button for Live Presenter Rounds */}
+          <button
+            type="button"
+            onClick={handleTriggerReset}
+            className="hidden sm:flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 px-2 py-1 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-colors cursor-pointer"
+            title="Reset to clean demonstration state"
+          >
+            <span className="material-symbols-outlined text-[14px]">refresh</span>
+            <span>Reset Demo</span>
+          </button>
+
           {/* Shift badge */}
           <div className="hidden sm:flex items-center gap-2 text-slate-600 text-xs px-2.5 py-1 bg-slate-100 rounded-md border border-slate-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-semibold text-slate-800">Shift B (Evening)</span>
+            <span className="font-semibold text-slate-800">Shift B</span>
             <span className="w-1 h-1 bg-slate-400 rounded-full"></span>
-            <span className="text-slate-500 font-mono text-[11px]">14:00 - 22:00 IST</span>
+            <span className="text-slate-500 font-mono text-[11px]">14:00 - 22:00</span>
           </div>
 
           {/* OISD Status Pill */}
@@ -192,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
                     <span className="text-[10px] text-slate-400 font-mono">1h ago</span>
                   </div>
                   <p className="text-slate-600 mt-1 leading-relaxed">
-                    Central Analytical Lab (Pooja Deshmukh) verified calibration swatches for Batch #2026-SRU-09.
+                    Central Analytical Lab verified calibration swatches for Batch #2026-SRU-09.
                   </p>
                 </div>
               </div>
@@ -213,6 +263,12 @@ export const Header: React.FC<HeaderProps> = ({ currentScreen, onNavigate, onBac
           )}
         </div>
       </div>
+
+      {resetSuccess && (
+        <div className="bg-emerald-600 text-white text-xs py-1.5 px-4 text-center font-medium animate-fadeIn">
+          ✓ Central Safety Database successfully reset to factory demonstration baseline!
+        </div>
+      )}
     </header>
   );
 };

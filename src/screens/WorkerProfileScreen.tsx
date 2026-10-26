@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScreenId } from '../types';
+import { ScreenId, WorkerTelemetry } from '../types';
 import { WORKER_TELEMETRY_LIST, REFINERY_FACILITY } from '../data/mockData';
 
 interface WorkerProfileScreenProps {
@@ -7,19 +7,21 @@ interface WorkerProfileScreenProps {
   onBack: () => void;
   workerId?: string;
   onSelectWorker?: (workerId: string) => void;
+  workers?: WorkerTelemetry[];
 }
 
 export const WorkerProfileScreen: React.FC<WorkerProfileScreenProps> = ({
   onNavigate,
   onBack,
   workerId = 'WRK-1048',
-  onSelectWorker
+  onSelectWorker,
+  workers = WORKER_TELEMETRY_LIST
 }) => {
   const [activeWorkerId, setActiveWorkerId] = useState<string>(workerId);
 
   const currentWorker =
-    WORKER_TELEMETRY_LIST.find((w) => w.workerId === activeWorkerId) ||
-    WORKER_TELEMETRY_LIST[0];
+    workers.find((w) => w.workerId === activeWorkerId) ||
+    workers[0];
 
   const handleWorkerChange = (newId: string) => {
     setActiveWorkerId(newId);
@@ -59,7 +61,7 @@ export const WorkerProfileScreen: React.FC<WorkerProfileScreenProps> = ({
           onChange={(e) => handleWorkerChange(e.target.value)}
           className="px-3 py-1.5 bg-slate-50 text-slate-900 text-xs font-semibold rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
         >
-          {WORKER_TELEMETRY_LIST.map((w) => (
+          {workers.map((w) => (
             <option key={w.workerId} value={w.workerId}>
               {w.workerName} ({w.workerId}) — {w.department}
             </option>
