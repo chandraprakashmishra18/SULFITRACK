@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { WorkerTelemetry, ScreenId } from '../types';
 import { WORKER_TELEMETRY_LIST, REFINERY_FACILITY } from '../data/mockData';
 
@@ -551,3 +552,4 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     </div>
   );
 };
+
